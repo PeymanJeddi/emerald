@@ -1,0 +1,47 @@
+# Development stack: Postgres + FastAPI with hot reload.
+# Run frontends locally: npm run dev (see package.json scripts).
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-esc}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-esc_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-emerald_scholars}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-esc} -d ${POSTGRES_DB:-emerald_scholars}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-esc}:${POSTGRES_PASSWORD:-esc_secret}@postgres:5432/${POSTGRES_DB:-emerald_scholars}
+      JWT_SECRET: ${JWT_SECRET:-dev-jwt-secret-change-in-production}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-86400}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001,http://localhost:3002}
+      UPLOAD_DIR: /app/uploads
+      RUN_SEED: ${RUN_SEED:-true}
+    volumes:
+      - ./backend:/app
+      - uploads_data:/app/uploads
+    entrypoint: []
+    command: >
+      sh -c "alembic upgrade head &&
+      if [ \"$$RUN_SEED\" = \"true\" ]; then python -m app.seed; fi &&
+      exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  uploads_data:

@@ -1,0 +1,17 @@
+{
+  "name": "emerald-scholars-congress",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:infra": "docker compose -f docker-compose.dev.yml up",
+    "dev:infra:down": "docker compose -f docker-compose.dev.yml down",
+    "dev:public": "npm --prefix apps/public-web run dev -- --port 3000",
+    "dev:portal": "npm --prefix apps/user-portal run dev -- --port 3001",
+    "dev:admin": "npm --prefix apps/admin-panel run dev -- --port 3002",
+    "dev:frontends": "concurrently -n public,portal,admin -c green,cyan,magenta \"npm run dev:public\" \"npm run dev:portal\" \"npm run dev:admin\"",
+    "dev": "concurrently -n infra,front -c blue,yellow \"npm run dev:infra\" \"npm run dev:frontends\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
