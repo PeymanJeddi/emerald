@@ -13,6 +13,8 @@ export const conferences: Conference[] = [
     eventReferenceCode: "ESC-EVT-2026-AI",
     overview:
       "A formal academic event focused on artificial intelligence, digital systems, applied technology, and interdisciplinary research exchange.",
+    shortDescription:
+      "Artificial intelligence, digital systems, and applied technology research.",
   },
   {
     title:
@@ -26,6 +28,8 @@ export const conferences: Conference[] = [
     eventReferenceCode: "ESC-EVT-2026-EMS",
     overview:
       "An academic symposium focused on innovation, management studies, digital transformation, and technology-oriented organizational research.",
+    shortDescription:
+      "Innovation, management studies, and technology-oriented organizational research.",
   },
   {
     title:
@@ -39,6 +43,8 @@ export const conferences: Conference[] = [
     eventReferenceCode: "ESC-EVT-2026-ENG",
     overview:
       "A multidisciplinary academic forum covering applied engineering, design methods, research practice, and scientific communication.",
+    shortDescription:
+      "Applied engineering, design methods, and scientific research communication.",
   },
 ];
 

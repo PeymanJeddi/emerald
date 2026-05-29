@@ -9,6 +9,7 @@ export type ConferenceFilterState = {
   season: string;
   conference_type: string;
   country: string;
+  status: string;
   upcoming_only: boolean;
 };
 
@@ -19,6 +20,7 @@ export const emptyFilters: ConferenceFilterState = {
   season: "",
   conference_type: "",
   country: "",
+  status: "",
   upcoming_only: false,
 };
 

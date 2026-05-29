@@ -408,7 +408,11 @@ export function ApplicantProfileForm({ profile, onUpdated }: Props) {
               <label className="text-sm font-medium">Research interests (comma-separated)</label>
               <input
                 name="research_interests"
-                defaultValue={(profile.profile.research_interests as string[] | undefined)?.join(", ") || ""}
+                defaultValue={
+                  Array.isArray(profile.profile?.research_interests)
+                    ? (profile.profile.research_interests as unknown as string[]).join(", ")
+                    : ""
+                }
                 className={inputClass}
               />
             </div>

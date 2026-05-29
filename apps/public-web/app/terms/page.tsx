@@ -69,7 +69,7 @@ export default async function TermsPage() {
     <Container className="py-12 lg:py-16">
       <SectionHeader
         title={heading}
-        subtitle="Please read these terms carefully before using our services."
+        description="Please read these terms carefully before using our services."
       />
       {updatedAt ? (
         <p className="mb-6 text-sm text-graphite/55">

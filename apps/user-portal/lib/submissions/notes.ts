@@ -33,7 +33,7 @@ export function parseNotes(notes: string | null | undefined): Partial<Applicatio
 
 export function formFromSubmission(
   sub: {
-    event_id: string;
+    event_id: string | null;
     title: string | null;
     abstract: string | null;
     keywords: string | null;
