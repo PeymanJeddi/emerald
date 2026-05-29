@@ -35,10 +35,14 @@ Copy `.env.example` to `.env` and adjust as needed:
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL connection string |
-| `JWT_SECRET` | Secret for signing JWT tokens |
+| `JWT_SECRET` | Secret for signing JWT tokens (use a long random value in production) |
 | `JWT_EXPIRES_IN` | Token lifetime in seconds (default 86400) |
-| `CORS_ORIGINS` | Comma-separated frontend origins |
-| `NEXT_PUBLIC_API_URL` | API URL for browser requests |
+| `CORS_ORIGINS` | Comma-separated frontend origins (must include your real domains in production) |
+| `NEXT_PUBLIC_API_URL` | API URL the browser uses to reach the backend (must be a public URL in production) |
+| `NEXT_PUBLIC_USER_PORTAL_URL` | Public URL of the user portal (used by the public site for sign-in / apply links) |
+| `NEXT_PUBLIC_PUBLIC_WEB_URL` | Public URL of the public website |
+| `UPLOAD_DIR` | Directory inside the backend container where uploaded files are stored |
+| `RUN_SEED` | When `true`, the backend seeds demo data on startup. Set to `false` in production |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | Database credentials |
 
 ## Quick Start — Development (recommended)
@@ -87,6 +91,124 @@ docker compose up --build
 ```
 
 On first run, the backend applies Alembic migrations and seeds development data.
+
+## Deploy on a Server
+
+These steps run the full production stack on a Linux server (VPS, cloud VM, etc.) using Docker.
+
+### 1. Prerequisites
+
+- A server with Docker Engine and the Docker Compose plugin installed.
+- A domain (or subdomains) pointing to the server, e.g.:
+  - `emeraldscholars.org` → public website
+  - `portal.emeraldscholars.org` → user portal
+  - `admin.emeraldscholars.org` → admin panel
+  - `api.emeraldscholars.org` → backend API
+
+### 2. Clone and configure
+
+```bash
+git clone https://github.com/PeymanJeddi/emerald.git
+cd emerald
+cp .env.example .env
+```
+
+Edit `.env` and replace all localhost values with your real domains and strong secrets:
+
+```env
+# Use a long random secret (e.g. `openssl rand -hex 32`)
+JWT_SECRET=<long-random-secret>
+
+# Strong database credentials
+POSTGRES_USER=esc
+POSTGRES_PASSWORD=<strong-db-password>
+POSTGRES_DB=emerald_scholars
+DATABASE_URL=postgresql://esc:<strong-db-password>@postgres:5432/emerald_scholars
+
+# Public URLs (what the browser uses)
+NEXT_PUBLIC_API_URL=https://api.emeraldscholars.org
+NEXT_PUBLIC_PUBLIC_WEB_URL=https://emeraldscholars.org
+NEXT_PUBLIC_USER_PORTAL_URL=https://portal.emeraldscholars.org
+
+# Allow your real frontends to call the API
+CORS_ORIGINS=https://emeraldscholars.org,https://portal.emeraldscholars.org,https://admin.emeraldscholars.org
+
+# Disable demo seeding in production
+RUN_SEED=false
+```
+
+> `NEXT_PUBLIC_*` values are baked into the frontend at build time (they are passed as Docker build args), so you must rebuild the frontend images after changing them.
+
+### 3. Build and start (detached)
+
+```bash
+docker compose up -d --build
+```
+
+The backend automatically applies Alembic migrations on startup. With `RUN_SEED=false`, no demo data is created — create your first admin user manually (see step 6).
+
+Check status and logs:
+
+```bash
+docker compose ps
+docker compose logs -f backend
+```
+
+### 4. Reverse proxy + HTTPS
+
+The containers expose ports `3000`, `3001`, `3002`, and `8000` on the host. Put a reverse proxy (nginx, Caddy, or Traefik) in front to map your domains to those ports and terminate TLS.
+
+Example nginx server block for the API (repeat per subdomain, changing `proxy_pass` to `3000` / `3001` / `3002`):
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name api.emeraldscholars.org;
+
+    # ssl_certificate / ssl_certificate_key managed by certbot or your CA
+
+    client_max_body_size 25m;  # allow file uploads
+
+    location / {
+        proxy_pass http://127.0.0.1:8000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+Use [Certbot](https://certbot.eff.org/) (`certbot --nginx`) to obtain and auto-renew Let's Encrypt certificates.
+
+### 5. Updating after a new release
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+### 6. Create the first admin user (production)
+
+With seeding disabled, register a user through the portal, then promote them to admin directly in the database:
+
+```bash
+docker compose exec postgres psql -U esc -d emerald_scholars \
+  -c "UPDATE users SET role = 'admin' WHERE email = 'you@yourdomain.com';"
+```
+
+### 7. Backups
+
+Persistent data lives in the `postgres_data` and `uploads_data` Docker volumes. Back them up regularly:
+
+```bash
+# Database dump
+docker compose exec postgres pg_dump -U esc emerald_scholars > backup.sql
+
+# Uploaded files
+docker run --rm -v emerald_uploads_data:/data -v "$PWD":/backup alpine \
+  tar czf /backup/uploads-backup.tar.gz -C /data .
+```
 
 ## Default Accounts
 

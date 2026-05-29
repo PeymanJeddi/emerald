@@ -27,7 +27,7 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-86400}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:3001,http://localhost:3002}
       UPLOAD_DIR: /app/uploads
-      RUN_SEED: "true"
+      RUN_SEED: ${RUN_SEED:-true}
     volumes:
       - uploads_data:/app/uploads
     depends_on:
